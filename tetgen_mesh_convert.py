@@ -5,7 +5,7 @@ import meshio
 import sys
 import os
 
-def generate_tetgen_mesh(obj_path, output_filename):
+def generate_tetgen_mesh(obj_path, output_filename, internal_points=None):
     """
     Generates a tetrahedral mesh from an OBJ file using TetGen and exports:
     1. A volume mesh XDMF ({output_filename}.xdmf)
@@ -14,6 +14,7 @@ def generate_tetgen_mesh(obj_path, output_filename):
     Args:
         obj_path (str): Path to the input .obj file.
         output_filename (str): Base name for the output file (without extension).
+        internal_points (np.ndarray, optional): Array of shape (N, 3) containing internal points to include.
     """
     print(f"Reading surface from {obj_path}...")
     # 1. Load and clean surface
@@ -23,6 +24,14 @@ def generate_tetgen_mesh(obj_path, output_filename):
     
     print("Cleaning surface mesh...")
     surface = surface.clean()
+    
+    # Insert internal points if provided
+    if internal_points is not None and len(internal_points) > 0:
+        print(f"Merging {len(internal_points)} internal points into input surface...")
+        # We must append points to the surface mesh without adding new cells (like VERTEX cells)
+        # to ensure the mesh remains "all triangular" for the TetGen wrapper.
+        new_points = np.vstack((surface.points, internal_points))
+        surface = pv.PolyData(new_points, surface.faces)
     
     # 2. Run TetGen
     print("Running TetGen...")

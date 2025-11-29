@@ -141,24 +141,36 @@ def run_simulation(mesh_path="mesh.xdmf", facets_path="facets.xdmf"):
     # Output (Use software like paraview to open the created folder)
     from dolfinx.io import VTXWriter
 
+    # Determine output paths
+    # Use the mesh filename as the base for the results
+    mesh_basename = os.path.splitext(os.path.basename(mesh_path))[0]
+    
+    # Create output directory
+    results_dir = "simulation_results"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+        
+    out_disp = os.path.join(results_dir, f"{mesh_basename}_displacement.bp")
+    out_vm = os.path.join(results_dir, f"{mesh_basename}_vonmises.bp")
+
     # Write displacement
-    with VTXWriter(comm, "results_displacement.bp", [uh]) as vtx:
+    with VTXWriter(comm, out_disp, [uh]) as vtx:
         vtx.write(0.0)
 
     # Write von Mises stress
-    with VTXWriter(comm, "results_vonmises.bp", [sigma_vm_h]) as vtx:
+    with VTXWriter(comm, out_vm, [sigma_vm_h]) as vtx:
         vtx.write(0.0)
 
     if comm.rank == 0:
-        print("DONE open results_displacement.bp and results_vonmises.bp in ParaView")
+        print(f"DONE open {out_disp} and {out_vm} in ParaView")
 
 if __name__ == "__main__":
     # Allow passing file paths as arguments
     script_dir = os.path.dirname(os.path.abspath(__file__))
     workspace_dir = os.path.dirname(script_dir)
     
-    default_mesh = os.path.join(workspace_dir, "gen_mesh", "tetgen_output_vol.xdmf")
-    default_facets = os.path.join(workspace_dir, "gen_mesh", "tetgen_output_surf.xdmf")
+    default_mesh = os.path.join(workspace_dir, "gen_mesh", "scan2_volume_v7_tetgen_vol.xdmf")
+    default_facets = os.path.join(workspace_dir, "gen_mesh", "scan2_volume_v7_tetgen_surf.xdmf")
     
     mesh_file = default_mesh
     facets_file = default_facets
