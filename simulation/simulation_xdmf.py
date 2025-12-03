@@ -137,6 +137,7 @@ def run_simulation(mesh_path="mesh.xdmf", facets_path="facets.xdmf"):
 
     if comm.rank == 0:
         print(f"Maximum von Mises stress: {max_vm_global:.2e} Pa")
+        print(f"MAX_STRESS: {max_vm_global}")
 
     # Output (Use software like paraview to open the created folder)
     from dolfinx.io import VTXWriter

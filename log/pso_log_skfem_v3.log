@@ -1,0 +1,343 @@
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>SET DISTUTILS_USE_SDK=1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>SET MSSdk=1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>SET "VS_VERSION=17.0" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>SET "VS_MAJOR=17" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>SET "VS_YEAR=2022" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "MSYS2_ARG_CONV_EXCL=/AI;/AL;/OUT;/out" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "MSYS2_ENV_CONV_EXCL=CL" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "PY_VCRUNTIME_REDIST=\bin\vcruntime140.dll" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "CXX=cl.exe" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "CC=cl.exe" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "VSINSTALLDIR=" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "NEWER_VS_WITH_OLDER_VC=0" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>for /F "usebackq tokens=*" %i in (`vswhere.exe -nologo -products * -version [17.0,18.0) -property installationPath`) do (set "VSINSTALLDIR=%i\" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if not exist "" (for /F "usebackq tokens=*" %i in (`vswhere.exe -nologo -products * -requires Microsoft.VisualStudio.ComponentGroup.VC.Tools.143.x86.x64 -property installationPath`) do (
+set "VSINSTALLDIR=%i\"  
+ set "NEWER_VS_WITH_OLDER_VC=1" 
+) ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if not exist "" (for /F "usebackq tokens=*" %i in (`vswhere.exe -nologo -products * -requires Microsoft.VisualStudio.Component.VC.v143.x86.x64 -property installationPath`) do (
+set "VSINSTALLDIR=%i\"  
+ set "NEWER_VS_WITH_OLDER_VC=1" 
+) ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if not exist "" (set "VSINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if not exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\" (set "VSINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if not exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\" (set "VSINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if not exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\" (set "VSINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>IF NOT "" == "" (
+set "INCLUDE=;C:\Users\Lucas\miniconda3\envs\mesh\Library\include;"  
+ set "LIB=;C:\Users\Lucas\miniconda3\envs\mesh\Library\lib;"  
+ set "CMAKE_PREFIX_PATH=;" 
+)  else (
+set "INCLUDE=C:\Users\Lucas\miniconda3\envs\mesh\Library\include;C:\Users\Lucas\miniconda3\envs\mesh\Library\include;"  
+ set "LIB=C:\Users\Lucas\miniconda3\envs\mesh\Library\lib;C:\Users\Lucas\miniconda3\envs\mesh\Library\lib;"  
+ set "CMAKE_PREFIX_PATH=C:\Users\Lucas\miniconda3\envs\mesh\Library;" 
+) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>call :GetWin10SdkDir 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>call :GetWin10SdkDirHelper HKLM\SOFTWARE\Wow6432Node  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 call :GetWin10SdkDirHelper HKCU\SOFTWARE\Wow6432Node  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 call :GetWin10SdkDirHelper HKLM\SOFTWARE  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 call :GetWin10SdkDirHelper HKCU\SOFTWARE  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 exit /B 1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>exit /B 0 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>for /F %i in ('dir /ON /B "\include\10.*"') DO (SET WindowsSDKVer=%~i ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 (echo "Didn't find any windows 10 SDK. I'm not sure if things will work, but let's try..." )  else (echo Windows SDK version found as: "" ) 
+Windows SDK version found as: ""
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "CMAKE_PLAT=x64" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "VCVARSBAT=64" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set "CMAKE_ARGS=-DCMAKE_BUILD_TYPE=Release" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>IF "" == "1" (set "CMAKE_ARGS=-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX= -DPython_FIND_REGISTRY=NEVER -DPython3_FIND_REGISTRY=NEVER -DCMAKE_PROGRAM_PATH=\bin;\Scripts;\Library\bin;\bin;\Scripts;\Library\bin" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>IF 2022 GEQ 2019 (
+set "CMAKE_GEN=Visual Studio 17 2022"  
+ set "USE_NEW_CMAKE_GEN_SYNTAX=1" 
+)  ELSE (
+IF "win-64" == "win-64" (set "CMAKE_GEN=Visual Studio 17 2022 Win64" )  else (set "CMAKE_GEN=Visual Studio 17 2022" )  
+ set "USE_NEW_CMAKE_GEN_SYNTAX=0" 
+) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>echo "NEWER_VS_WITH_OLDER_VC=0" 
+"NEWER_VS_WITH_OLDER_VC=0"
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>set /p LATEST_VS= 0<"C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>type "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>dir "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\\VC\Redist\MSVC\" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if "0" == "1" (
+echo ""  
+ if "~0,4" == "14.2" (set "CMAKE_GEN=Visual Studio 16 2019" )  else (set "CMAKE_GEN=Visual Studio 17 2022" )  
+ set "USE_NEW_CMAKE_GEN_SYNTAX=1" 
+) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>IF "" == "" SET "CMAKE_GENERATOR=Visual Studio 17 2022" 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>IF "1" == "1" (
+IF "" == "" SET "CMAKE_GENERATOR_PLATFORM=x64"  
+ IF "" == "" SET "CMAKE_GENERATOR_TOOLSET=v143" 
+) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>pushd C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\ 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if "~0,5" LSS "14.44" (
+ 
+ CALL "VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=~0,5WindowsSDKVer 
+)  else (CALL "VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.44  ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if 1 NEQ 0 (if "" == "" (CALL "VC\Auxiliary\Build\vcvars64.bat" ) ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>popd
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>IF NOT "win-64" == "win-64" (
+set "CONDA_BUILD_CROSS_COMPILATION=1"  
+ set "CMAKE_ARGS=-DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=AMD64"  
+ setlocal enabledelayedexpansion  
+ set CL_DIR1=  
+ set CL_DIR2=  
+ set CL_EXE=  
+ FOR /F "delims=" %i IN ('where cl.exe') DO if not defined CL_EXE set "CL_EXE=%i"  
+ call :GetDirName CL_EXE CL_DIR1  
+ call :GetDirName CL_DIR1 CL_DIR2  
+  
+ subst Z: "!CL_DIR2!"  
+ endlocal 
+ set "CC_FOR_BUILD=Z:/x64/cl.exe"  
+ set "CXX_FOR_BUILD=Z:/x64/cl.exe"  
+ call :ReplaceInTargetVariable "C:\Users\Lucas\miniconda3\envs\mesh/Library/lib;C:\Users\Lucas\miniconda3\envs\mesh\Library\lib;C:\Users\Lucas\miniconda3\envs\mesh\Library\lib;" LIB_FOR_BUILD  
+ call :ReplaceInTargetVariable "C:\Users\Lucas\miniconda3\envs\mesh/Library/include;C:\Users\Lucas\miniconda3\envs\mesh\Library\include;C:\Users\Lucas\miniconda3\envs\mesh\Library\include;" INCLUDE_FOR_BUILD  
+ set "LDFLAGS_FOR_BUILD= /MACHINE:x64" 
+)  else (set "CONDA_BUILD_CROSS_COMPILATION=0" ) 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>call :GetWin10SdkDirHelper HKLM\SOFTWARE\Wow6432Node  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 call :GetWin10SdkDirHelper HKCU\SOFTWARE\Wow6432Node  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 call :GetWin10SdkDirHelper HKLM\SOFTWARE  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 call :GetWin10SdkDirHelper HKCU\SOFTWARE  1>nul 2>&1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>if errorlevel 1 exit /B 1 
+
+(mesh) C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project>exit /B 0 
+Initializing swarm...
+  Initializing particle 1/2...
+Generating 50 internal points from scan2_volume_v7.obj with inward offset 0.6...
+  Batch generated 574 valid points. Total: 574/50
+50 Initial points generated.
+  Initializing particle 2/2...
+Generating 50 internal points from scan2_volume_v7.obj with inward offset 0.6...
+  Batch generated 600 valid points. Total: 600/50
+50 Initial points generated.
+Swarm initialized.
+
+--- Iteration 1/1 ---
+Reading surface from scan2_volume_v7.obj...
+Cleaning surface mesh...
+Merging 50 internal points into input surface...
+Running TetGen...
+Generated mesh with 913 points and 3187 cells.
+Tagged 337 facets as Bottom (2) and 1091 as Top (1).
+Volume mesh written to pso_results\iter_0_part_0_vol.xdmf
+Surface mesh written to pso_results\iter_0_part_0_surf.xdmf
+    Simulation failed with return code 1
+    STDOUT:
+
+    STDERR:
+Traceback (most recent call last):
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 286, in <module>
+    run_simulation(sys.argv[1])
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 100, in run_simulation
+    K = stiffness.assemble(basis)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\miniconda3\envs\mesh\Lib\site-packages\skfem\assembly\form\bilinear_form.py", line 146, in assemble
+    mat = COOData._assemble_scipy_csr(*self._assemble(*args, **kwargs))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\miniconda3\envs\mesh\Lib\site-packages\skfem\assembly\form\bilinear_form.py", line 93, in _assemble
+    data[j, i, :] = self._kernel(
+                    ^^^^^^^^^^^^^
+  File "C:\Users\Lucas\miniconda3\envs\mesh\Lib\site-packages\skfem\assembly\form\bilinear_form.py", line 151, in _kernel
+    return np.sum(self.form(*u, *v, w) * dx, axis=1)
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 74, in stiffness
+    epsilon_u = sym_grad_manual(u.grad)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 72, in sym_grad_manual
+    return 0.5 * (u_grad + np.transpose(u_grad, (1, 0, 2)))
+                  ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ValueError: operands could not be broadcast together with shapes (3,3187,4) (3187,3,4) 
+
+  Particle 1: Stress = inf Pa
+Reading surface from scan2_volume_v7.obj...
+Cleaning surface mesh...
+Merging 50 internal points into input surface...
+Running TetGen...
+Generated mesh with 916 points and 3247 cells.
+Tagged 341 facets as Bottom (2) and 1085 as Top (1).
+Volume mesh written to pso_results\iter_0_part_1_vol.xdmf
+Surface mesh written to pso_results\iter_0_part_1_surf.xdmf
+    Simulation failed with return code 1
+    STDOUT:
+
+    STDERR:
+Traceback (most recent call last):
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 286, in <module>
+    run_simulation(sys.argv[1])
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 100, in run_simulation
+    K = stiffness.assemble(basis)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\miniconda3\envs\mesh\Lib\site-packages\skfem\assembly\form\bilinear_form.py", line 146, in assemble
+    mat = COOData._assemble_scipy_csr(*self._assemble(*args, **kwargs))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\miniconda3\envs\mesh\Lib\site-packages\skfem\assembly\form\bilinear_form.py", line 93, in _assemble
+    data[j, i, :] = self._kernel(
+                    ^^^^^^^^^^^^^
+  File "C:\Users\Lucas\miniconda3\envs\mesh\Lib\site-packages\skfem\assembly\form\bilinear_form.py", line 151, in _kernel
+    return np.sum(self.form(*u, *v, w) * dx, axis=1)
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 74, in stiffness
+    epsilon_u = sym_grad_manual(u.grad)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lucas\Documents\0_Academic\ME 542 Adv Comp Mthds- PP Design\Project\ME542-Project\simulation\simulation_skfem.py", line 72, in sym_grad_manual
+    return 0.5 * (u_grad + np.transpose(u_grad, (1, 0, 2)))
+                  ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ValueError: operands could not be broadcast together with shapes (3,3247,4) (3247,3,4) 
+
+  Particle 2: Stress = inf Pa
+
+Optimization Finished.
+Best Stress: inf Pa
+Delaunizing vertices...
+Delaunay seconds:  0.001
+Creating surface mesh ...
+Surface mesh seconds:  0.001
+Recovering boundaries...
+Boundary recovery seconds:  0.001
+Removing exterior tetrahedra ...
+Exterior tets removal seconds:  0
+Recovering Delaunayness...
+Delaunay recovery seconds:  0
+Refining mesh...
+  730 insertions, added 231 points, 4138 tetrahedra in queue.
+  243 insertions, added 53 points, 3871 tetrahedra in queue.
+  324 insertions, added 66 points, 1727 tetrahedra in queue.
+Refinement seconds:  0.006
+Smoothing vertices...
+Mesh smoothing seconds:  0.004
+Improving mesh...
+Mesh improvement seconds:  0.001
+
+Writing nodes.
+Writing elements.
+Writing faces.
+Writing edges.
+
+Output seconds:  0
+Total running seconds:  0.014
+
+Statistics:
+
+  Input points: 548
+  Input facets: 992
+  Input segments: 1261
+  Input holes: 0
+  Input regions: 0
+
+  Mesh points: 913
+  Mesh tetrahedra: 3187
+  Mesh faces: 7088
+  Mesh faces on exterior boundary: 1428
+  Mesh faces on input facets: 1428
+  Mesh edges on input segments: 1381
+  Steiner points on input facets:  98
+  Steiner points on input segments:  120
+  Steiner points inside domain: 147
+
+Delaunizing vertices...
+Delaunay seconds:  0.002
+Creating surface mesh ...
+Surface mesh seconds:  0
+Recovering boundaries...
+Boundary recovery seconds:  0.001
+Removing exterior tetrahedra ...
+Exterior tets removal seconds:  0
+Recovering Delaunayness...
+Delaunay recovery seconds:  0
+Refining mesh...
+  730 insertions, added 257 points, 4573 tetrahedra in queue.
+  243 insertions, added 62 points, 3661 tetrahedra in queue.
+  324 insertions, added 49 points, 0 tetrahedra in queue.
+Refinement seconds:  0.006
+Smoothing vertices...
+Mesh smoothing seconds:  0.004
+Improving mesh...
+Mesh improvement seconds:  0.001
+
+Writing nodes.
+Writing elements.
+Writing faces.
+Writing edges.
+
+Output seconds:  0
+Total running seconds:  0.014
+
+Statistics:
+
+  Input points: 548
+  Input facets: 992
+  Input segments: 1261
+  Input holes: 0
+  Input regions: 0
+
+  Mesh points: 916
+  Mesh tetrahedra: 3247
+  Mesh faces: 7207
+  Mesh faces on exterior boundary: 1426
+  Mesh faces on input facets: 1426
+  Mesh edges on input segments: 1380
+  Steiner points on input facets:  98
+  Steiner points on input segments:  119
+  Steiner points inside domain: 151
+
+The system cannot find the file specified.
+The system cannot find the path specified.
+The system cannot find the path specified.
+The system cannot find the path specified.
+The system cannot find the path specified.
+The system cannot find the drive specified.
+The system cannot find the path specified.
+The system cannot find the path specified.
+
+

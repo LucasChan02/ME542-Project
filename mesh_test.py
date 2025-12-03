@@ -9,7 +9,7 @@ def main():
     parser.add_argument("method", choices=["gmsh", "tetgen"], help="Mesh generation method to use")
     args = parser.parse_args()
 
-    obj_path = "scan2_volume_v6_sc.obj"
+    obj_path = "scan2_volume_v7.obj"
     
     print(f"Generating initial vertices from {obj_path}...")
     # Generate points using the OBJ mesh
