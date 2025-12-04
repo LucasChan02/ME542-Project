@@ -1,5 +1,5 @@
-Gradient shape: (3, 3, 9180, 1)
-Maximum von Mises stress: 1.22e+06 Pa
-MAX_STRESS: 1215886.704303762
-vm_stress shape: (9180,)
-Result written to pso_results\iter_15_part_3_vol_result.vtk
+Gradient shape: (3, 3, 8614, 1)
+Maximum von Mises stress: 1.13e+06 Pa
+MAX_STRESS: 1134625.5255838912
+vm_stress shape: (8614,)
+Result written to pso_results\iter_15_part_3_vol_result.xdmf

@@ -151,7 +151,7 @@ class PSOOptimizer:
                 if fitness < self.global_best_fitness:
                     self.global_best_fitness = fitness
                     self.global_best_position = p.position.copy()
-                    print(f"    New Global Best! Stress = {self.global_best_fitness:.2e} Pa")
+                    print(f"    New Global Best. Stress = {self.global_best_fitness:.2e} Pa")
             
             # Update Particles (Velocity & Position)
             for p in self.particles:
