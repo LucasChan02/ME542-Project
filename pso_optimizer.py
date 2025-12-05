@@ -1,17 +1,45 @@
 import numpy as np
 import pyvista as pv
-import subprocess
 import os
 import sys
-import re
 import shutil
 
 # Import project modules
 from initial_vertices import generate_initial_vertices
 from tetgen_mesh_convert import generate_tetgen_mesh
 
-class Particle:
+# --- Configuration ---
+# Modify these variables to configure the optimization
+OBJ_PATH = "scan2_volume_v7.obj"
+NUM_INTERNAL_POINTS = 1000   # Number of "particles" (internal points) per design instance
+NUM_INSTANCES = 2          # Population size (number of design instances)
+MAX_ITER = 5               # Number of iterations
+W = 0.5                    # Inertia weight
+C1 = 1.5                   # Cognitive coefficient
+C2 = 1.5                   # Social coefficient
+OUTPUT_DIR = "pso_results"
+SOLVER_TYPE = "skfem"      # Options: "skfem", "fenicsx"
+
+# Import simulation function based on configuration
+if SOLVER_TYPE == "skfem":
+    from simulation.simulation_skfem import run_simulation
+elif SOLVER_TYPE == "fenicsx":
+    try:
+        from simulation.simulation_xdmf import run_simulation
+    except ImportError:
+        print("Error: FEniCSx solver not available. Please install dolfinx.")
+        sys.exit(1)
+else:
+    print(f"Error: Unknown solver type '{SOLVER_TYPE}'")
+    sys.exit(1)
+
+class DesignInstance:
+    """
+    Represents a single design candidate (a mesh configuration).
+    Contains a set of internal points (particles) that define the mesh.
+    """
     def __init__(self, position, velocity):
+        # position: (N, 3) array of internal point coordinates
         self.position = position
         self.velocity = velocity
         self.best_position = position.copy()
@@ -21,13 +49,13 @@ class Particle:
 class PSOOptimizer:
     """
     Particle Swarm Optimization (PSO) for Mesh Optimization.
-    Optimizes the position of internal vertices to minimize maximum von Mises stress.
+    Optimizes the position of internal vertices (particles) to minimize maximum von Mises stress.
     """
-    def __init__(self, obj_path, num_internal_points, num_particles=5, max_iter=10, 
+    def __init__(self, obj_path, num_internal_points, num_instances=5, max_iter=10, 
                  w=0.5, c1=1.5, c2=1.5, output_dir="pso_results"):
         self.obj_path = obj_path
         self.num_internal_points = num_internal_points
-        self.num_particles = num_particles
+        self.num_instances = num_instances
         self.max_iter = max_iter
         self.w = w
         self.c1 = c1
@@ -36,7 +64,7 @@ class PSOOptimizer:
         
         self.global_best_position = None
         self.global_best_fitness = float('inf')
-        self.particles = []
+        self.instances = []
         
         # Load mesh for boundary checking
         self.mesh = pv.read(obj_path)
@@ -51,15 +79,15 @@ class PSOOptimizer:
 
     def initialize(self):
         print("Initializing swarm...")
-        for i in range(self.num_particles):
-            print(f"  Initializing particle {i+1}/{self.num_particles}...")
-            # Generate random valid positions
+        for i in range(self.num_instances):
+            print(f"  Initializing instance {i+1}/{self.num_instances}...")
+            # Generate random valid positions for internal points (particles)
             pos = generate_initial_vertices(self.obj_path, self.num_internal_points, inward_offset=0.6)
             # Initialize velocity (small random values)
             vel = (np.random.rand(*pos.shape) - 0.5) * 0.1
             
-            p = Particle(pos, vel)
-            self.particles.append(p)
+            instance = DesignInstance(pos, vel)
+            self.instances.append(instance)
             
         print("Swarm initialized.")
 
@@ -84,49 +112,47 @@ class PSOOptimizer:
             
         return points
 
-    def evaluate_fitness(self, particle, iteration, particle_idx):
+    def evaluate_fitness(self, instance, iteration, instance_idx):
         # --- 1. Generate Mesh ---
-        run_name = f"iter_{iteration}_part_{particle_idx}"
+        run_name = f"iter_{iteration}_inst_{instance_idx}"
         mesh_base = os.path.join(self.output_dir, run_name)
         
         try:
-            generate_tetgen_mesh(self.obj_path, mesh_base, particle.position)
+            generate_tetgen_mesh(self.obj_path, mesh_base, instance.position)
         except Exception as e:
             print(f"    Mesh generation failed: {e}")
             return float('inf')
 
         # --- 2. Run Simulation ---
         mesh_vol = mesh_base + "_vol.xdmf"
-        mesh_surf = mesh_base + "_surf.xdmf"
         
         if not os.path.exists(mesh_vol):
             print("    Mesh file not found.")
             return float('inf')
             
-        sim_script = os.path.join("simulation", "simulation_skfem.py")
-        cmd = [sys.executable, sim_script, mesh_vol]
-        
         try:
-            # Write simulation output to log file
+            # Redirect stdout to log file
             log_file = os.path.join("log", f"{run_name}.log")
-            with open(log_file, "w") as outfile:
-                subprocess.run(cmd, stdout=outfile, stderr=subprocess.STDOUT, check=True)
             
-            # Read output back for parsing
-            with open(log_file, "r") as infile:
-                output = infile.read()
-                
-        except subprocess.CalledProcessError as e:
-            print(f"    Simulation failed with return code {e.returncode}")
-            return float('inf')
-
-        # --- 3. Parse Result ---
-        match = re.search(r"MAX_STRESS:\s*([0-9\.eE\+\-]+)", output)
-        if match:
-            max_stress = float(match.group(1))
+            # We need to capture stdout from the imported function
+            # This is a bit tricky with direct calls if the function prints to stdout
+            # We can redirect sys.stdout temporarily
+            
+            with open(log_file, "w") as log:
+                original_stdout = sys.stdout
+                sys.stdout = log
+                try:
+                    max_stress = run_simulation(mesh_vol)
+                finally:
+                    sys.stdout = original_stdout
+            
+            if max_stress is None:
+                 return float('inf')
+                 
             return max_stress
-        else:
-            print("    Could not parse max stress from output.")
+
+        except Exception as e:
+            print(f"    Simulation failed: {e}")
             return float('inf')
 
     def optimize(self):
@@ -135,42 +161,42 @@ class PSOOptimizer:
         for it in range(self.max_iter):
             print(f"\n--- Iteration {it+1}/{self.max_iter} ---")
             
-            for i, p in enumerate(self.particles):
+            for i, instance in enumerate(self.instances):
                 # Evaluate Fitness
-                fitness = self.evaluate_fitness(p, it, i)
-                p.current_fitness = fitness
+                fitness = self.evaluate_fitness(instance, it, i)
+                instance.current_fitness = fitness
                 
-                print(f"  Particle {i+1}: Stress = {fitness:.2e} Pa")
+                print(f"  Instance {i+1}: Stress = {fitness:.2e} Pa")
                 
                 # Update Personal Best
-                if fitness < p.best_fitness:
-                    p.best_fitness = fitness
-                    p.best_position = p.position.copy()
+                if fitness < instance.best_fitness:
+                    instance.best_fitness = fitness
+                    instance.best_position = instance.position.copy()
                     
                 # Update Global Best
                 if fitness < self.global_best_fitness:
                     self.global_best_fitness = fitness
-                    self.global_best_position = p.position.copy()
-                    print(f"    New Global Best. Stress = {self.global_best_fitness:.2e} Pa")
+                    self.global_best_position = instance.position.copy()
+                    print(f"    New Global Best! Stress = {self.global_best_fitness:.2e} Pa")
             
-            # Update Particles (Velocity & Position)
-            for p in self.particles:
+            # Update Instances (Velocity & Position)
+            for instance in self.instances:
                 if self.global_best_position is None:
                     # Explore randomly if no solution found yet
-                    r1 = np.random.rand(*p.position.shape)
-                    p.velocity = self.w * p.velocity + r1 * 0.1
+                    r1 = np.random.rand(*instance.position.shape)
+                    instance.velocity = self.w * instance.velocity + r1 * 0.1
                 else:
-                    r1 = np.random.rand(*p.position.shape)
-                    r2 = np.random.rand(*p.position.shape)
+                    r1 = np.random.rand(*instance.position.shape)
+                    r2 = np.random.rand(*instance.position.shape)
                     
                     # Standard PSO Velocity Update
-                    p.velocity = (self.w * p.velocity + 
-                                  self.c1 * r1 * (p.best_position - p.position) + 
-                                  self.c2 * r2 * (self.global_best_position - p.position))
+                    instance.velocity = (self.w * instance.velocity + 
+                                  self.c1 * r1 * (instance.best_position - instance.position) + 
+                                  self.c2 * r2 * (self.global_best_position - instance.position))
                 
                 # Update Position and Check Bounds
-                p.position = p.position + p.velocity
-                p.position = self.check_bounds(p.position)
+                instance.position = instance.position + instance.velocity
+                instance.position = self.check_bounds(instance.position)
                 
         print("\nOptimization Finished.")
         print(f"Best Stress: {self.global_best_fitness:.2e} Pa")
@@ -185,39 +211,22 @@ class PSOOptimizer:
             # Run simulation one last time to generate result file with stress/displacement
             print("Running simulation for best solution to generate output fields...")
             mesh_vol = best_mesh_base + "_vol.xdmf"
-            sim_script = os.path.join("simulation", "simulation_skfem.py")
-            cmd = [sys.executable, sim_script, mesh_vol]
             try:
-                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                run_simulation(mesh_vol)
                 print(f"Simulation results saved to {best_mesh_base}_result.xdmf")
-            except subprocess.CalledProcessError:
-                print("Warning: Failed to run simulation for best solution.")
+            except Exception as e:
+                print(f"Warning: Failed to run simulation for best solution: {e}")
 
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="PSO Mesh Optimizer")
-    parser.add_argument("--obj", type=str, default="scan2_volume_v7.obj", help="Path to input OBJ file")
-    parser.add_argument("--points", type=int, default=50, help="Number of internal vertices")
-    parser.add_argument("--population", type=int, default=2, help="Population size (number of particles/meshes per iteration)")
-    parser.add_argument("--iter", type=int, default=1, help="Number of iterations")
-    
-    args = parser.parse_args()
-    
-    OBJ_PATH = args.obj
-    NUM_INTERNAL_POINTS = args.points
-    NUM_PARTICLES = args.population
-    MAX_ITER = args.iter
-    
     print(f"Starting Optimization with:")
     print(f"  OBJ: {OBJ_PATH}")
-    print(f"  Internal Points: {NUM_INTERNAL_POINTS}")
-    print(f"  Population Size: {NUM_PARTICLES}")
+    print(f"  Internal Points (Particles): {NUM_INTERNAL_POINTS}")
+    print(f"  Instances (Population): {NUM_INSTANCES}")
     print(f"  Iterations: {MAX_ITER}")
     
     if not os.path.exists(OBJ_PATH):
         print(f"Error: {OBJ_PATH} not found.")
         sys.exit(1)
         
-    optimizer = PSOOptimizer(OBJ_PATH, NUM_INTERNAL_POINTS, NUM_PARTICLES, MAX_ITER)
+    optimizer = PSOOptimizer(OBJ_PATH, NUM_INTERNAL_POINTS, NUM_INSTANCES, MAX_ITER, W, C1, C2, OUTPUT_DIR)
     optimizer.optimize()

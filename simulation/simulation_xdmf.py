@@ -17,19 +17,24 @@ from dolfinx.fem import (
 )
 from dolfinx.fem.petsc import LinearProblem
 
-def run_simulation(mesh_path="mesh.xdmf", facets_path="facets.xdmf"):
+def run_simulation(mesh_path):
+    # Derive facets path from mesh path
+    # Assuming mesh is "name_vol.xdmf" and facets is "name_surf.xdmf"
+    base_name = mesh_path.replace("_vol.xdmf", "")
+    facets_path = f"{base_name}_surf.xdmf"
+    
     comm = MPI.COMM_WORLD
     
     # Check if files exist
     if not os.path.exists(mesh_path):
         if comm.rank == 0:
             print(f"Error: Mesh file '{mesh_path}' not found.")
-        return
+        return None
     
     if not os.path.exists(facets_path):
         if comm.rank == 0:
             print(f"Error: Facets file '{facets_path}' not found.")
-        return
+        return None
 
     # Reading mesh and tags from XDMF
     if comm.rank == 0:
@@ -56,8 +61,8 @@ def run_simulation(mesh_path="mesh.xdmf", facets_path="facets.xdmf"):
     v = ufl.TestFunction(V)      # test function
 
     # Material properties
-    E = 5.0e7       # Young's Modulus - Pa
-    nu = 0.30       # Poisson's ratio
+    E = 44.2e6       # Young's Modulus - Pa
+    nu = 0.38       # Poisson's ratio
     mu = E / (2.0 * (1.0 + nu))    # Shear Modulus - Pa
     lmbda = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))    # Lame's first parameter - Pa
 
@@ -147,9 +152,7 @@ def run_simulation(mesh_path="mesh.xdmf", facets_path="facets.xdmf"):
     mesh_basename = os.path.splitext(os.path.basename(mesh_path))[0]
     
     # Create output directory
-    results_dir = "simulation_results"
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir)
+    results_dir = os.path.dirname(mesh_path) # Save in same dir as mesh
         
     out_disp = os.path.join(results_dir, f"{mesh_basename}_displacement.bp")
     out_vm = os.path.join(results_dir, f"{mesh_basename}_vonmises.bp")
@@ -164,21 +167,11 @@ def run_simulation(mesh_path="mesh.xdmf", facets_path="facets.xdmf"):
 
     if comm.rank == 0:
         print(f"DONE open {out_disp} and {out_vm} in ParaView")
+        
+    return max_vm_global
 
 if __name__ == "__main__":
-    # Allow passing file paths as arguments
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_dir = os.path.dirname(script_dir)
-    
-    default_mesh = os.path.join(workspace_dir, "gen_mesh", "scan2_volume_v7_tetgen_vol.xdmf")
-    default_facets = os.path.join(workspace_dir, "gen_mesh", "scan2_volume_v7_tetgen_surf.xdmf")
-    
-    mesh_file = default_mesh
-    facets_file = default_facets
-    
     if len(sys.argv) > 1:
-        mesh_file = sys.argv[1]
-    if len(sys.argv) > 2:
-        facets_file = sys.argv[2]
-        
-    run_simulation(mesh_file, facets_file)
+        run_simulation(sys.argv[1])
+    else:
+        print("Usage: python simulation_xdmf.py <mesh_vol.xdmf>")

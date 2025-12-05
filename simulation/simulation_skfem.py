@@ -16,8 +16,8 @@ def run_simulation(mesh_path):
         return
 
     # --- 2. Material Properties (BASF Ultrafuse TPU 95A) ---
-    E = 26.0e6      # Young's Modulus (Pa)
-    nu = 0.40       # Poisson's ratio
+    E = 44.2e6      # Young's Modulus (Pa)
+    nu = 0.38       # Poisson's ratio
     lam, mu = lame_parameters(E, nu)
 
     # --- 3. Identify Boundaries ---
@@ -138,6 +138,8 @@ def run_simulation(mesh_path):
         )
     )
     print(f"Result written to {out_path}")
+    
+    return max_vm
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
