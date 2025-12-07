@@ -18,7 +18,7 @@ W = 0.5                    # Inertia weight
 C1 = 1.5                   # Cognitive coefficient
 C2 = 1.5                   # Social coefficient
 OUTPUT_DIR = "pso_results"
-SOLVER_TYPE = "skfem"      # Options: "skfem", "fenicsx"
+SOLVER_TYPE = "fenicsx"      # Options: "skfem", "fenicsx"
 
 # Import simulation function based on configuration
 if SOLVER_TYPE == "skfem":
@@ -26,8 +26,8 @@ if SOLVER_TYPE == "skfem":
 elif SOLVER_TYPE == "fenicsx":
     try:
         from simulation.simulation_xdmf import run_simulation
-    except ImportError:
-        print("Error: FEniCSx solver not available. Please install dolfinx.")
+    except ImportError as e:
+        print(f"Error: FEniCSx solver not available. Please install dolfinx. Details: {e}")
         sys.exit(1)
 else:
     print(f"Error: Unknown solver type '{SOLVER_TYPE}'")
