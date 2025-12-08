@@ -6,41 +6,36 @@ import numpy as np
 
 def parse_logs(log_dir="log"):
     """
-    Parses log files to extract fitness (stress) values.
+    Parses CSV log file to extract fitness (stress) values.
     Returns a dictionary: {iteration: [stress_values]}
     """
     data = {}
+    csv_file = os.path.join(log_dir, "pso_history.csv")
     
-    # Pattern to match filenames: iter_0_part_0.log
-    file_pattern = os.path.join(log_dir, "iter_*_part_*.log")
-    files = glob.glob(file_pattern)
-    
-    print(f"Found {len(files)} log files in {log_dir}...")
-    
-    filename_re = re.compile(r"iter_(\d+)_part_(\d+)\.log")
-    stress_re = re.compile(r"MAX_STRESS:\s*([0-9\.eE\+\-]+)")
-    
-    for filepath in files:
-        filename = os.path.basename(filepath)
-        match = filename_re.match(filename)
-        if not match:
-            continue
-            
-        iteration = int(match.group(1))
+    if not os.path.exists(csv_file):
+        print(f"CSV log file not found: {csv_file}")
+        return data
         
-        try:
-            with open(filepath, "r") as f:
-                content = f.read()
-                
-            stress_match = stress_re.search(content)
-            if stress_match:
-                stress = float(stress_match.group(1))
+    print(f"Reading logs from {csv_file}...")
+    
+    try:
+        with open(csv_file, "r") as f:
+            header = f.readline() # Skip header
+            for line in f:
+                parts = line.strip().split(",")
+                if len(parts) < 3:
+                    continue
+                    
+                iteration = int(parts[0])
+                # instance = int(parts[1])
+                stress = float(parts[2])
                 
                 if iteration not in data:
                     data[iteration] = []
                 data[iteration].append(stress)
-        except Exception as e:
-            print(f"Error reading {filename}: {e}")
+                
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
             
     return data
 

@@ -11,14 +11,15 @@ from tetgen_mesh_convert import generate_tetgen_mesh
 # --- Configuration ---
 # Modify these variables to configure the optimization
 OBJ_PATH = "scan2_volume_v7.obj"
-NUM_INTERNAL_POINTS = 1000   # Number of "particles" (internal points) per design instance
-NUM_INSTANCES = 2          # Population size (number of design instances)
-MAX_ITER = 5               # Number of iterations
-W = 0.5                    # Inertia weight
-C1 = 1.5                   # Cognitive coefficient
+NUM_INTERNAL_POINTS = 400   # Number of "particles" (internal points) per design instance
+NUM_INSTANCES = 10          # Population size (number of design instances)
+MAX_ITER = 50               # Number of iterations
+W = 0.4                    # Inertia weight
+C1 = 1.8                   # Cognitive coefficient
 C2 = 1.5                   # Social coefficient
 OUTPUT_DIR = "pso_results"
 SOLVER_TYPE = "fenicsx"      # Options: "skfem", "fenicsx"
+BOUNDARY_STRATEGY = "reflective" # Options: "soft", "reflective"
 
 # Import simulation function based on configuration
 if SOLVER_TYPE == "skfem":
@@ -32,6 +33,42 @@ elif SOLVER_TYPE == "fenicsx":
 else:
     print(f"Error: Unknown solver type '{SOLVER_TYPE}'")
     sys.exit(1)
+
+class SimpleProgressBar:
+    """
+    A simple progress bar for the console.
+    """
+    def __init__(self, total, width=40):
+        self.total = total
+        self.width = width
+        self.current = 0
+        self.start_time = None
+        
+    def log(self, message):
+        """Prints a message above the progress bar."""
+        # Clear line, print message, then reprint bar (handled by next update)
+        sys.stdout.write(f"\r\033[K{message}\n")
+        self.display()
+        
+    def update(self, step=1, info=""):
+        """Updates progress by step amount."""
+        self.current += step
+        if self.current > self.total:
+            self.current = self.total
+        self.display(info)
+        
+    def display(self, info=""):
+        fraction = self.current / self.total
+        filled = int(self.width * fraction)
+        bar = "=" * filled + "-" * (self.width - filled)
+        percent = int(fraction * 100)
+        
+        # Clear line and print bar
+        sys.stdout.write(f"\r\033[K[{bar}] {percent}% {info}")
+        sys.stdout.flush()
+        
+    def finish(self):
+        sys.stdout.write("\n")
 
 class DesignInstance:
     """
@@ -76,6 +113,16 @@ class PSOOptimizer:
             
         if not os.path.exists("log"):
             os.makedirs("log")
+            
+        # Initialize CSV logs in log/ directory
+        self.history_file = os.path.join("log", "pso_history.csv")
+        self.best_history_file = os.path.join("log", "best_candidate_history.csv")
+        
+        with open(self.history_file, "w") as f:
+            f.write("iteration,instance_idx,stress\n")
+            
+        with open(self.best_history_file, "w") as f:
+            f.write("iteration,stress\n")
 
     def initialize(self):
         print("Initializing swarm...")
@@ -83,90 +130,139 @@ class PSOOptimizer:
             print(f"  Initializing instance {i+1}/{self.num_instances}...")
             # Generate random valid positions for internal points (particles)
             pos = generate_initial_vertices(self.obj_path, self.num_internal_points, inward_offset=0.6)
-            # Initialize velocity (small random values)
-            vel = (np.random.rand(*pos.shape) - 0.5) * 0.1
+            
+            # Initialize velocity scale relative to domain size
+            # Using ~5% of bounding box diagonal is a good heuristic
+            bounds = self.mesh.bounds
+            self.diag = np.linalg.norm([bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4]])
+            vel_scale = self.diag * 0.05
+            
+            # Initialize velocity
+            vel = (np.random.rand(*pos.shape) - 0.5) * vel_scale
             
             instance = DesignInstance(pos, vel)
             self.instances.append(instance)
             
         print("Swarm initialized.")
 
-    def check_bounds(self, points):
+    def check_bounds(self, points, velocities):
         """
         Ensures points remain inside the mesh boundary.
-        Points outside are pulled towards the mesh center.
+        Implements different strategies for handling boundary collisions.
+        Returns updated (points, velocities).
         """
+        # --- Hard Reset for Lost Particles ---
+        # If points drift exceedingly far (e.g. > 3x diagonal), likely numerical explosion.
+        # Reset them completely to random valid positions.
+        center = np.array(self.mesh.center)
+        dist_from_center = np.linalg.norm(points - center, axis=1)
+        reset_mask = dist_from_center > (self.diag * 3.0)
+        
+        if np.any(reset_mask):
+             num_reset = np.sum(reset_mask)
+             # print(f"    WARNING: Hard resetting {num_reset} lost particles.")
+             # Re-generate valid points (this is expensive inside loop but necessary for recovery)
+             # Efficient workaround: Move to center + small random jitter
+             points[reset_mask] = center + (np.random.rand(num_reset, 3) - 0.5) * (self.diag * 0.1)
+             velocities[reset_mask] = 0.0 # Reset velocity
+        
+        # --- Normal Boundary Check ---
         # Check implicit distance
         pts_poly = pv.PolyData(points)
         target = pts_poly.compute_implicit_distance(self.mesh)
         distances = target['implicit_distance']
         
         # Mask for points outside (distance > -offset)
+        # Using a small offset to keep points cleanly inside
         inward_offset = 0.6
         mask = distances > -inward_offset
         
         if np.any(mask):
-            # Move invalid points towards center until they are inside
-            center = np.array(self.mesh.center)
-            points[mask] = points[mask] * 0.9 + center * 0.1 
             
-        return points
+            if BOUNDARY_STRATEGY == "reflective":
+                # Reflective Strategy:
+                # 1. Reverse velocity component to "bounce" 
+                # (Simple approximation: reverse full velocity vector)
+                velocities[mask] *= -1.0
+                
+                # 2. Push point back inside
+                # Calculate vector from center to point
+                vec_to_point = points[mask] - center
+                # Push back towards center by a random fraction to avoid sticking to surface
+                # Push back 10% towards center
+                points[mask] = points[mask] - vec_to_point * 0.1
+                
+            elif BOUNDARY_STRATEGY == "soft":
+                # Soft Strategy:
+                # 1. Move invalid points towards center until they are inside
+                points[mask] = points[mask] * 0.9 + center * 0.1 
+                
+                # 2. Dampen velocity to simulate energy loss
+                velocities[mask] *= 0.5
+                
+        return points, velocities
 
     def evaluate_fitness(self, instance, iteration, instance_idx):
         # --- 1. Generate Mesh ---
         run_name = f"iter_{iteration}_inst_{instance_idx}"
         mesh_base = os.path.join(self.output_dir, run_name)
         
+        max_stress = float('inf')
+        
         try:
             generate_tetgen_mesh(self.obj_path, mesh_base, instance.position)
+            
+            # --- 2. Run Simulation ---
+            mesh_vol = mesh_base + "_vol.xdmf"
+            
+            if os.path.exists(mesh_vol):
+                # Redirect stdout to a single temporary log file or overwrite usually
+                # We use a shared log file to avoid clutter, overwriting it each time
+                log_file = os.path.join("log", "latest_simulation.log")
+                
+                with open(log_file, "w") as log:
+                    original_stdout = sys.stdout
+                    sys.stdout = log
+                    try:
+                        result = run_simulation(mesh_vol)
+                        if result is not None:
+                            max_stress = result
+                    finally:
+                        sys.stdout = original_stdout
+                        
         except Exception as e:
-            print(f"    Mesh generation failed: {e}")
-            return float('inf')
-
-        # --- 2. Run Simulation ---
-        mesh_vol = mesh_base + "_vol.xdmf"
+            # print(f"    Processing failed: {e}")
+            pass
         
-        if not os.path.exists(mesh_vol):
-            print("    Mesh file not found.")
-            return float('inf')
-            
+        # Robust Logging: Log result even if it is inf
         try:
-            # Redirect stdout to log file
-            log_file = os.path.join("log", f"{run_name}.log")
-            
-            # We need to capture stdout from the imported function
-            # This is a bit tricky with direct calls if the function prints to stdout
-            # We can redirect sys.stdout temporarily
-            
-            with open(log_file, "w") as log:
-                original_stdout = sys.stdout
-                sys.stdout = log
-                try:
-                    max_stress = run_simulation(mesh_vol)
-                finally:
-                    sys.stdout = original_stdout
-            
-            if max_stress is None:
-                 return float('inf')
-                 
-            return max_stress
-
+            with open(self.history_file, "a") as f:
+                f.write(f"{iteration},{instance_idx},{max_stress}\n")
         except Exception as e:
-            print(f"    Simulation failed: {e}")
-            return float('inf')
+            print(f"Error writing to log: {e}")
+            
+        return max_stress
 
     def optimize(self):
         self.initialize()
         
+        total_steps = self.max_iter * self.num_instances
+        bar = SimpleProgressBar(total_steps)
+        
+        # Velocity Clamping Limit (10% of domain)
+        v_max = self.diag * 0.1
+        
+        print("\nStarting Optimization loop...")
+        
         for it in range(self.max_iter):
-            print(f"\n--- Iteration {it+1}/{self.max_iter} ---")
+            # print(f"\n--- Iteration {it+1}/{self.max_iter} ---")
             
             for i, instance in enumerate(self.instances):
                 # Evaluate Fitness
                 fitness = self.evaluate_fitness(instance, it, i)
                 instance.current_fitness = fitness
                 
-                print(f"  Instance {i+1}: Stress = {fitness:.2e} Pa")
+                # print(f"  Instance {i+1}: Stress = {fitness:.2e} Pa")
                 
                 # Update Personal Best
                 if fitness < instance.best_fitness:
@@ -177,14 +273,20 @@ class PSOOptimizer:
                 if fitness < self.global_best_fitness:
                     self.global_best_fitness = fitness
                     self.global_best_position = instance.position.copy()
-                    print(f"    New Global Best! Stress = {self.global_best_fitness:.2e} Pa")
+                    bar.log(f"New Global Best! Stress = {self.global_best_fitness:.2e} Pa (Iter {it}, Inst {i})")
+                    
+                    # Log new global best
+                    with open(self.best_history_file, "a") as f:
+                        f.write(f"{it},{fitness}\n")
+                        
+                bar.update(1, f"Iter {it+1}/{self.max_iter} | Best: {self.global_best_fitness:.2e}")
             
             # Update Instances (Velocity & Position)
             for instance in self.instances:
                 if self.global_best_position is None:
                     # Explore randomly if no solution found yet
                     r1 = np.random.rand(*instance.position.shape)
-                    instance.velocity = self.w * instance.velocity + r1 * 0.1
+                    instance.velocity = self.w * instance.velocity + r1 * 1.0 # Increased random exploration
                 else:
                     r1 = np.random.rand(*instance.position.shape)
                     r2 = np.random.rand(*instance.position.shape)
@@ -194,10 +296,17 @@ class PSOOptimizer:
                                   self.c1 * r1 * (instance.best_position - instance.position) + 
                                   self.c2 * r2 * (self.global_best_position - instance.position))
                 
-                # Update Position and Check Bounds
-                instance.position = instance.position + instance.velocity
-                instance.position = self.check_bounds(instance.position)
+                # Velocity Clamping
+                # Clip velocity components to avoid explosion
+                instance.velocity = np.clip(instance.velocity, -v_max, v_max)
                 
+                # Update Position
+                instance.position = instance.position + instance.velocity
+                
+                # Check Bounds and Update Position/Velocity
+                instance.position, instance.velocity = self.check_bounds(instance.position, instance.velocity)
+        
+        bar.finish()        
         print("\nOptimization Finished.")
         print(f"Best Stress: {self.global_best_fitness:.2e} Pa")
         
